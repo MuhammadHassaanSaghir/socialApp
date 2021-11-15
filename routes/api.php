@@ -46,6 +46,7 @@ Route::middleware(['myauths'])->group(function () {
     Route::post('/SendRequest', [RequestController::class, 'sendRequest']);
     Route::get('/GetRequests', [RequestController::class, 'getRequests']);
     Route::post('/RecieveRequest', [RequestController::class, 'recieveRequest']);
+    Route::delete('/RemoveFriend/{id}', [RequestController::class, 'remove']);
 
     //COMMENTS ROUTES
     Route::post('/CreateComment', [CommentController::class, 'create']);

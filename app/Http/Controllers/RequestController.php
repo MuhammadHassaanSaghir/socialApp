@@ -10,6 +10,8 @@ use Firebase\JWT\Key;
 use App\Models\User;
 use App\Models\FriendRequest;
 
+use Illuminate\Support\Facades\DB;
+
 class RequestController extends Controller
 {
     public function getAllusers(Request $request)
@@ -127,6 +129,36 @@ class RequestController extends Controller
         } else {
             return response([
                 "message" => "No User Found"
+            ]);
+        }
+    }
+
+    public function remove(Request $request, $id)
+    {
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
+
+        if ($id == $decode->data) {
+            return response([
+                "message" => "You cannot Unfriend to Yourself"
+            ]);
+        }
+
+        $friendExist = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?))', [$id, $decode->data, $decode->data, $id]);
+        if (!empty($friendExist)) {
+            $removeFriend = DB::table('friend_requests')->where('id', $friendExist[0]->id)->delete();
+            if (isset($removeFriend)) {
+                return response([
+                    "message" => "You Successfully Remove Friend"
+                ]);
+            } else {
+                return response([
+                    "message" => "Something Went Wrong"
+                ]);
+            }
+        } else {
+            return response([
+                "message" => "No Friend Found"
             ]);
         }
     }

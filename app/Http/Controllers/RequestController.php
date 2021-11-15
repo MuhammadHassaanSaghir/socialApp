@@ -14,25 +14,25 @@ class RequestController extends Controller
 {
     public function getAllusers(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
-
-        $allUsers = User::where('id', '!=', $decode->data)->get();
-        if (isset($allUsers)) {
+        $request->validate([
+            'friend_name' => 'required',
+        ]);
+        $user = User::where('name', 'LIKE', '%' . $request->friend_name . '%')->get();
+        if (json_decode($user)) {
             return response([
-                'All Users' => $allUsers,
+                'Searched user' => $user,
             ]);
         } else {
             return response([
-                'message' => 'No Users Found',
+                'message' => 'No User Found',
             ]);
         }
     }
 
     public function sendRequest(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $request->validate([
             'reciever_id' => 'required|integer',
@@ -75,8 +75,8 @@ class RequestController extends Controller
 
     public function getRequests(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $friendsRequests = FriendRequest::where('reciever_id', '=', $decode->data, 'AND', 'status', '=', 'Pending')->get();
         if (json_decode($friendsRequests)) {
@@ -92,8 +92,8 @@ class RequestController extends Controller
 
     public function recieveRequest(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $request->validate([
             'sender_id' => 'required|integer'

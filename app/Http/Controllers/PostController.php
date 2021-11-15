@@ -16,8 +16,8 @@ class PostController extends Controller
 {
     public function create(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $request->validate([
             'title' => 'required|string',
@@ -58,8 +58,8 @@ class PostController extends Controller
 
     public function update(Request $request, $id)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $post = Post::where('id', '=', $id, 'AND', 'user_id', '=', $decode->data)->first();
         if (isset($post)) {
@@ -68,7 +68,7 @@ class PostController extends Controller
                 if (($request->privacy == 'Public' or $request->privacy == 'public') or ($request->privacy == 'Private' or $request->privacy == 'private')) {
                     $update->privacy = $request->privacy;
                     $update->save();
-                    if ($request->file('attachment') != null) {
+                    if ($request->file('attachment') != null and $update->attachment != null) {
                         unlink(storage_path('app/' . $update->attachment));
                     }
 
@@ -114,8 +114,8 @@ class PostController extends Controller
 
     public function delete(Request $request, $id)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $post = Post::where('id', '=', $id, 'AND', 'user_id', '=', $decode->data)->first();
         if (isset($post)) {
@@ -149,16 +149,14 @@ class PostController extends Controller
 
     public function getPrivateposts(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
-        $posts = Post::whereIn('privacy', array('Private', 'private', 'Public', 'public'))->get();
+        $posts = Post::whereIn('privacy', array('Private', 'private'))->get();
         foreach ($posts as $post) {
             $post = json_decode($post->user_id);
 
-            DB::enableQueryLog();
-            // select * from friend_requests` where (`sender_id` = 2 or `reciever_id` = 1) and `status` = 'Accept'
-
+            // DB::enableQueryLog();
             $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post, $decode->data, $decode->data, $post, 'Accept']);
 
             // $userSeen = FriendRequest::where('sender_id', '$post')
@@ -172,7 +170,6 @@ class PostController extends Controller
             // dd(!empty($userSeen));
             // dd(DB::getQueryLog());
 
-            // if (json_encode($userSeen) == '[]' and json_decode($posts)) {
             if (!empty($userSeen) and json_decode($posts)) {
                 return response([
                     'Posts' => $posts,
@@ -187,8 +184,8 @@ class PostController extends Controller
 
     public function search(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $request->validate([
             'title' => 'required|string',

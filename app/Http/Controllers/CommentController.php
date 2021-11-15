@@ -18,12 +18,11 @@ class CommentController extends Controller
 {
     public function create(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $request->validate([
             'post_id' => 'integer',
-            'comment' => 'string',
         ]);
 
         $post_exists = POST::where('id', '=', $request->post_id)->first();
@@ -62,7 +61,7 @@ class CommentController extends Controller
                     $comment = Comment::create([
                         'user_id' => $decode->data,
                         'post_id' => $request->post_id,
-                        'comments' => $request->comments,
+                        'comments' => $request->comment,
                         'attachment' => $attachment
                     ]);
 
@@ -89,70 +88,60 @@ class CommentController extends Controller
         }
     }
 
-    public function searchCommentbyPost(Request $request, $id)
+    public function update(Request $request, $id)
     {
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
+
+        $comment_exists = Comment::where('id', '=', $id)->first();
+        if (isset($comment_exists)) {
+            $post_privacy = POST::where('id', '=', $comment_exists->post_id)->first();
+            if ($post_privacy->privacy == 'Public' or $post_privacy->privacy == 'public') {
+                if ($request->file('attachment') != null and $comment_exists->attachment != null) {
+                    unlink(storage_path('app/' . $comment_exists->attachment));
+                }
+                $comment_exists->update($request->all());
+
+                if ($request->file('attachment') != null) {
+                    $comment_exists->attachment = $request->file('attachment')->store('commentFiles');
+                    $comment_exists->save();
+                }
+                return response([
+                    'Updated Comment' => $comment_exists,
+                    'message' => 'Comment Updated Succesfully',
+                ]);
+            } elseif ($post_privacy->privacy == 'Private' or $post_privacy->privacy == 'private') {
+                $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post_privacy->user_id, $decode->data, $decode->data, $post_privacy->user_id, 'Accept']);
+                if (!empty($userSeen)) {
+                    if ($request->file('attachment') != null) {
+                        unlink(storage_path('app/' . $comment_exists->attachment));
+                    }
+                    $comment_exists->update($request->all());
+                    if ($request->file('attachment') != null) {
+                        $comment_exists->attachment = $request->file('attachment')->store('commentFiles');
+                        $comment_exists->save();
+                    }
+                    return response([
+                        'Updated Comment' => $comment_exists,
+                        'message' => 'Comment Updated Succesfully',
+                    ]);
+                } else {
+                    return response([
+                        'message' => 'This Post is Private and you are not a friend.',
+                    ]);
+                }
+            }
+        } else {
+            return response([
+                'message' => 'No Post Found',
+            ]);
+        }
     }
-
-    // public function update(Request $request, $id)
-    // {
-    //     $curr_token = $request->bearerToken();
-    //     $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
-
-    //     $comment = Comment::where('id', '=', $id, 'AND', 'user_id', '=', $decode->data)->first();
-    //     if (isset($comment)) {
-    //         $update = Comment::find($id);
-    //         if (isset($request->privacy)) {
-    //             if (($request->privacy == 'Public' or $request->privacy == 'public') or ($request->privacy == 'Private' or $request->privacy == 'private')) {
-    //                 $update->privacy = $request->privacy;
-    //                 $update->save();
-    //                 if ($request->file('attachment') != null) {
-    //                     unlink(storage_path('app/' . $update->attachment));
-    //                 }
-
-    //                 $update->update($request->all());
-
-    //                 if ($request->file('attachment') != null) {
-    //                     $update->attachment = $request->file('attachment')->store('postFiles');
-    //                     $update->save();
-    //                 }
-
-    //                 return response([
-    //                     'Post' => $update,
-    //                     'message' => 'Post Updated Succesfully',
-    //                 ]);
-    //             } else {
-    //                 return response([
-    //                     'message' => 'You have to required place Public / Private in Privacy',
-    //                 ]);
-    //             }
-    //         } else {
-    //             if ($request->file('attachment') != null) {
-    //                 unlink(storage_path('app/' . $update->attachment));
-    //             }
-
-    //             $update->update($request->all());
-
-    //             if ($request->file('attachment') != null) {
-    //                 $update->attachment = $request->file('attachment')->store('postFiles');
-    //                 $update->save();
-    //             }
-
-    //             return response([
-    //                 'Post' => $update,
-    //                 'message' => 'Post Updated Succesfully',
-    //             ]);
-    //         }
-    //     } else {
-    //         return response([
-    //             'message' => 'Unauthorize to Update Post',
-    //         ]);
-    //     }
-    // }
 
     public function delete(Request $request, $id)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $comment = Comment::where('id', '=', $id, 'AND', 'user_id', '=', $decode->data)->first();
         if (isset($comment)) {

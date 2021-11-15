@@ -163,8 +163,8 @@ class UserController extends Controller
 
     public function update(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $request->validate([
             'name' => 'string|min:3',
@@ -192,8 +192,8 @@ class UserController extends Controller
 
     public function update_password(Request $request)
     {
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
 
         $request->validate([
             'current_password' => 'required',
@@ -222,8 +222,8 @@ class UserController extends Controller
     public function logout(Request $request)
     {
         // auth()->user()->tokens()->delete();
-        $curr_token = $request->bearerToken();
-        $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+        $currToken = $request->bearerToken();
+        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
         $token_exist = token::where('user_id', $decode->data)->first();
         if ($token_exist) {
             $token_exist->delete();

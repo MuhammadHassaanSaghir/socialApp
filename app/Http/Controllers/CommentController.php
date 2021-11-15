@@ -107,12 +107,11 @@ class CommentController extends Controller
                     $comment_exists->save();
                 }
                 return response([
-                    'Updated Comment' => $comment_exists,
                     'message' => 'Comment Updated Succesfully',
+                    'Updated Comment' => $comment_exists,
                 ]);
             } elseif ($post_privacy->privacy == 'Private' or $post_privacy->privacy == 'private') {
-                $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post_privacy->user_id, $decode->data, $decode->data, $post_privacy->user_id, 'Accept']);
-                if (!empty($userSeen)) {
+                if ($decode->data == $post_privacy->user_id) {
                     if ($request->file('attachment') != null) {
                         unlink(storage_path('app/' . $comment_exists->attachment));
                     }
@@ -122,14 +121,31 @@ class CommentController extends Controller
                         $comment_exists->save();
                     }
                     return response([
-                        'Updated Comment' => $comment_exists,
                         'message' => 'Comment Updated Succesfully',
+                        'Updated Comment' => $comment_exists,
                     ]);
                 } else {
-                    return response([
-                        'message' => 'This Post is Private and you are not a friend.',
-                    ]);
+                    $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post_privacy->user_id, $decode->data, $decode->data, $post_privacy->user_id, 'Accept']);
+                    if (!empty($userSeen)) {
+                        if ($request->file('attachment') != null) {
+                            unlink(storage_path('app/' . $comment_exists->attachment));
+                        }
+                        $comment_exists->update($request->all());
+                        if ($request->file('attachment') != null) {
+                            $comment_exists->attachment = $request->file('attachment')->store('commentFiles');
+                            $comment_exists->save();
+                        }
+                        return response([
+                            'message' => 'Comment Updated Succesfully',
+                            'Updated Comment' => $comment_exists,
+                        ]);
+                    } else {
+                        return response([
+                            'message' => 'This Post is Private and you are not a friend.',
+                        ]);
+                    }
                 }
+            } else {
             }
         } else {
             return response([

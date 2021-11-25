@@ -25,7 +25,7 @@ class AuthMiddleware
                 'message' => 'Please Enter Token',
             ]);
         } else {
-            $decode = JWT::decode($curr_token, new Key('socialApp_key', 'HS256'));
+            $decode = JWT::decode($curr_token, new Key(config('JwtConstant.secret_key'), 'HS256'));
             $token_exist = token::where('user_id', $decode->data)->first();
 
             if (!isset($token_exist)) {

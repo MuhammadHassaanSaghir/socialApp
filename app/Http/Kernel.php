@@ -46,6 +46,7 @@ class Kernel extends HttpKernel
         ],
 
         'myauths' => [\App\Http\Middleware\AuthMiddleware::class],
+        'checkfriend' => [\App\Http\Middleware\FriendMiddleware::class],
     ];
 
     /**

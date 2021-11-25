@@ -4,162 +4,164 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-
 use App\Models\User;
 use App\Models\FriendRequest;
-
+use App\Services\tokenService;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class RequestController extends Controller
 {
     public function getAllusers(Request $request)
     {
-        $request->validate([
-            'friend_name' => 'required',
-        ]);
-        $user = User::where('name', 'LIKE', '%' . $request->friend_name . '%')->get();
-        if (json_decode($user)) {
-            return response([
-                'Searched user' => $user,
-            ]);
-        } else {
-            return response([
-                'message' => 'No User Found',
-            ]);
+        try {
+            $request->validate([]);
+            $user = User::where('name', 'LIKE', '%' . $request->friend_name . '%')->get();
+            if (json_decode($user)) {
+                return response([
+                    'Searched user' => $user,
+                ]);
+            } else {
+                return response([
+                    'message' => 'No User Found',
+                ]);
+            }
+        } catch (Throwable $e) {
+            return response(['message' => $e->getMessage()]);
         }
     }
 
     public function sendRequest(Request $request)
     {
-        $currToken = $request->bearerToken();
-        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
+        try {
+            $request->validated();
 
-        $request->validate([
-            'reciever_id' => 'required|integer',
-        ]);
-
-        if ($decode->data == $request->reciever_id) {
-            return response([
-                "message" => "You are not allow to Send a Friend Request to yourself",
-            ]);
-        }
-
-        $user = User::where('id', '=', $request->reciever_id)->first();
-        if (isset($user)) {
-            $alreadySent = FriendRequest::where('sender_id', '=', $decode->data, 'AND', 'reciever_id', '=', $request->reciever_id)->first();
-            if (isset($alreadySent)) {
+            if ((new tokenService)->getToken($request) == $request->reciever_id) {
                 return response([
-                    "message" => "You have already Sent the Friend Request. Please Wait for Request Acceptance",
+                    "message" => "You are not allow to Send a Friend Request to yourself",
                 ]);
-            } else {
-                $sendRequest = FriendRequest::create([
-                    'sender_id' => $decode->data,
-                    'reciever_id' => $request->reciever_id,
-                ]);
-                if (isset($sendRequest)) {
+            }
+
+            $user = User::where('id', '=', $request->reciever_id)->first();
+            if (isset($user)) {
+                $alreadySent = FriendRequest::where('sender_id', '=', (new tokenService)->getToken($request), 'AND', 'reciever_id', '=', $request->reciever_id)->first();
+                if (isset($alreadySent)) {
                     return response([
-                        "message" => "The Request has been Successfully Sent",
+                        "message" => "You have already Sent the Friend Request. Please Wait for Request Acceptance",
                     ]);
                 } else {
-                    return response([
-                        "message" => "Something Went Wrong",
+                    $sendRequest = FriendRequest::create([
+                        'sender_id' => (new tokenService)->getToken($request),
+                        'reciever_id' => $request->reciever_id,
                     ]);
+                    if (isset($sendRequest)) {
+                        return response([
+                            "message" => "The Request has been Successfully Sent",
+                        ]);
+                    } else {
+                        return response([
+                            "message" => "Something Went Wrong",
+                        ]);
+                    }
                 }
+            } else {
+                return response([
+                    "message" => "No User Found",
+                ]);
             }
-        } else {
-            return response([
-                "message" => "No User Found",
-            ]);
+        } catch (Throwable $e) {
+            return response(['message' => $e->getMessage()]);
         }
     }
 
     public function getRequests(Request $request)
     {
-        $currToken = $request->bearerToken();
-        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
-
-        $friendsRequests = FriendRequest::where('reciever_id', '=', $decode->data, 'AND', 'status', '=', 'Pending')->get();
-        if (json_decode($friendsRequests)) {
-            return response([
-                "All Requests" => $friendsRequests,
-            ]);
-        } else {
-            return response([
-                "message" => 'No Request Found',
-            ]);
+        try {
+            $friendsRequests = FriendRequest::where('reciever_id', '=', (new tokenService)->getToken($request), 'AND', 'status', '=', 'Pending')->get();
+            if (json_decode($friendsRequests)) {
+                return response([
+                    "All Requests" => $friendsRequests,
+                ]);
+            } else {
+                return response([
+                    "message" => 'No Request Found',
+                ]);
+            }
+        } catch (Throwable $e) {
+            return response(['message' => $e->getMessage()]);
         }
     }
 
     public function recieveRequest(Request $request)
     {
-        $currToken = $request->bearerToken();
-        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
-
-        $request->validate([
-            'sender_id' => 'required|integer'
-        ]);
-
-        if ($decode->data == $request->sender_id) {
-            return response([
-                "message" => "You cannot receive a Request of yourself"
+        try {
+            $request->validate([
+                'sender_id' => 'required|integer'
             ]);
-        }
 
-        $recieveRequest = FriendRequest::where('sender_id', '=', $request->sender_id, 'AND', 'reciever_id', $decode->data)->first();
-        if (isset($recieveRequest)) {
-            if ($recieveRequest->status == 'Accept') {
+            if ((new tokenService)->getToken($request) == $request->sender_id) {
                 return response([
-                    "Message" => "You are already Accept the Request"
+                    "message" => "You cannot receive a Request of yourself"
                 ]);
-            } else {
-                $recieveRequest->status = 'Accept';
-                $acceptRequest = $recieveRequest->save();
-                if (isset($acceptRequest)) {
+            }
+
+            $recieveRequest = FriendRequest::where('sender_id', '=', $request->sender_id, 'AND', 'reciever_id', (new tokenService)->getToken($request))->first();
+            if (isset($recieveRequest)) {
+                if ($recieveRequest->status == 'Accept') {
                     return response([
-                        "message" => "The request has been Accepted Successfully"
+                        "Message" => "You are already Accept the Request"
+                    ]);
+                } else {
+                    $recieveRequest->status = 'Accept';
+                    $acceptRequest = $recieveRequest->save();
+                    if (isset($acceptRequest)) {
+                        return response([
+                            "message" => "The request has been Accepted Successfully"
+                        ]);
+                    } else {
+                        return response([
+                            "message" => "Something Went Wrong"
+                        ]);
+                    }
+                }
+            } else {
+                return response([
+                    "message" => "No User Found"
+                ]);
+            }
+        } catch (Throwable $e) {
+            return response(['message' => $e->getMessage()]);
+        }
+    }
+
+    public function remove(Request $request, $id)
+    {
+        try {
+            if ($id == (new tokenService)->getToken($request)) {
+                return response([
+                    "message" => "You cannot Unfriend to Yourself"
+                ]);
+            }
+
+            $friendExist = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?))', [$id, (new tokenService)->getToken($request), (new tokenService)->getToken($request), $id]);
+            if (!empty($friendExist)) {
+                $removeFriend = DB::table('friend_requests')->where('id', $friendExist[0]->id)->delete();
+                if (isset($removeFriend)) {
+                    return response([
+                        "message" => "You Successfully Remove Friend"
                     ]);
                 } else {
                     return response([
                         "message" => "Something Went Wrong"
                     ]);
                 }
-            }
-        } else {
-            return response([
-                "message" => "No User Found"
-            ]);
-        }
-    }
-
-    public function remove(Request $request, $id)
-    {
-        $currToken = $request->bearerToken();
-        $decode = JWT::decode($currToken, new Key('socialApp_key', 'HS256'));
-
-        if ($id == $decode->data) {
-            return response([
-                "message" => "You cannot Unfriend to Yourself"
-            ]);
-        }
-
-        $friendExist = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?))', [$id, $decode->data, $decode->data, $id]);
-        if (!empty($friendExist)) {
-            $removeFriend = DB::table('friend_requests')->where('id', $friendExist[0]->id)->delete();
-            if (isset($removeFriend)) {
-                return response([
-                    "message" => "You Successfully Remove Friend"
-                ]);
             } else {
                 return response([
-                    "message" => "Something Went Wrong"
+                    "message" => "No Friend Found"
                 ]);
             }
-        } else {
-            return response([
-                "message" => "No Friend Found"
-            ]);
+        } catch (Throwable $e) {
+            return response(['message' => $e->getMessage()]);
         }
     }
 }

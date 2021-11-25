@@ -1,3 +1,19 @@
+<h1>
+    <ol>
+        <li>Routes files (DONE)</li>
+<li>Resource (DONE)</li>
+        <li>Try catch  (DONE)</li>
+<li>Service  (DONE)</li>
+<li>Helper function  (DONE)</li>
+<li>Constants  (DONE)</li>
+<li>Job to send email (DONE)</li>
+<li>Form request validation (DONE)</li>
+        <li>update user (DONE)</li>
+        <li>middleware (DONE)</li>
+        <li></li>
+    </ol>
+</h1>
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
 
 <p align="center">

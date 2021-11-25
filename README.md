@@ -3,7 +3,7 @@
         <li>Routes files (DONE)</li>
 <li>Resource (DONE)</li>
         <li>Try catch  (DONE)</li>
-<li>Service  (DONE)</li>
+<li>JWT Service  (DONE)</li>
 <li>Helper function  (DONE)</li>
 <li>Constants  (DONE)</li>
 <li>Job to send email (DONE)</li>

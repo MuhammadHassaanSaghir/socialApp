@@ -36,7 +36,7 @@ class RequestController extends Controller
         try {
             $request->validated();
 
-            if ((new tokenService)->getToken($request) == $request->reciever_id) {
+            if ($request->user_id == $request->reciever_id) {
                 return response([
                     "message" => "You are not allow to Send a Friend Request to yourself",
                 ]);
@@ -44,14 +44,14 @@ class RequestController extends Controller
 
             $user = User::where('id', '=', $request->reciever_id)->first();
             if (isset($user)) {
-                $alreadySent = FriendRequest::where('sender_id', '=', (new tokenService)->getToken($request), 'AND', 'reciever_id', '=', $request->reciever_id)->first();
+                $alreadySent = FriendRequest::where('sender_id', '=', $request->user_id, 'AND', 'reciever_id', '=', $request->reciever_id)->first();
                 if (isset($alreadySent)) {
                     return response([
                         "message" => "You have already Sent the Friend Request. Please Wait for Request Acceptance",
                     ]);
                 } else {
                     $sendRequest = FriendRequest::create([
-                        'sender_id' => (new tokenService)->getToken($request),
+                        'sender_id' => $request->user_id,
                         'reciever_id' => $request->reciever_id,
                     ]);
                     if (isset($sendRequest)) {
@@ -77,7 +77,7 @@ class RequestController extends Controller
     public function getRequests(Request $request)
     {
         try {
-            $friendsRequests = FriendRequest::where('reciever_id', '=', (new tokenService)->getToken($request), 'AND', 'status', '=', 'Pending')->get();
+            $friendsRequests = FriendRequest::where('reciever_id', '=', $request->user_id, 'AND', 'status', '=', 'Pending')->get();
             if (json_decode($friendsRequests)) {
                 return response([
                     "All Requests" => $friendsRequests,
@@ -99,13 +99,13 @@ class RequestController extends Controller
                 'sender_id' => 'required|integer'
             ]);
 
-            if ((new tokenService)->getToken($request) == $request->sender_id) {
+            if ($request->user_id == $request->sender_id) {
                 return response([
                     "message" => "You cannot receive a Request of yourself"
                 ]);
             }
 
-            $recieveRequest = FriendRequest::where('sender_id', '=', $request->sender_id, 'AND', 'reciever_id', (new tokenService)->getToken($request))->first();
+            $recieveRequest = FriendRequest::where('sender_id', '=', $request->sender_id, 'AND', 'reciever_id', $request->user_id)->first();
             if (isset($recieveRequest)) {
                 if ($recieveRequest->status == 'Accept') {
                     return response([
@@ -137,13 +137,13 @@ class RequestController extends Controller
     public function remove(Request $request, $id)
     {
         try {
-            if ($id == (new tokenService)->getToken($request)) {
+            if ($id == $request->user_id) {
                 return response([
                     "message" => "You cannot Unfriend to Yourself"
                 ]);
             }
 
-            $friendExist = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?))', [$id, (new tokenService)->getToken($request), (new tokenService)->getToken($request), $id]);
+            $friendExist = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?))', [$id, $request->user_id, $request->user_id, $id]);
             if (!empty($friendExist)) {
                 $removeFriend = DB::table('friend_requests')->where('id', $friendExist[0]->id)->delete();
                 if (isset($removeFriend)) {

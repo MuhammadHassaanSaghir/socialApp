@@ -23,7 +23,7 @@ class UserController extends Controller
     {
         try {
             $request->validated();
-            $emailToken = (new tokenService)->createToken(time());
+            $emailToken = (new tokenService)->emailToken(time());
             $url = url('api/EmailConfirmation/' . $request->email . '/' . $emailToken);
             // Mail::to($request->email)->send(new VerifyEmail($url, 'feroli3485@epeva.com', $request->name));
             VerificationEmail::dispatch($request->email, $url, $request->name)->delay(now()->addSeconds(10));
@@ -132,7 +132,7 @@ class UserController extends Controller
             $request->validate([
                 'name' => 'string|min:3',
             ]);
-            $user = User::where('user_id', '=', (new tokenService)->getToken($request))->first();
+            $user = User::where('id', '=', $request->user_id)->first();
             if (isset($user)) {
                 if (isset($request->name)) {
                     $user->name = $request->name;
@@ -160,7 +160,7 @@ class UserController extends Controller
     {
         try {
             $request->validated();
-            $user = User::find((new tokenService)->getToken($request));
+            $user = User::find($request->user_id);
             $check_pass = Hash::check($request->current_password, $user->password);
             if (($user and $check_pass) == true) {
                 $password_update = $user->update(['password' => Hash::make($request->new_password)]);
@@ -187,7 +187,7 @@ class UserController extends Controller
     {
         try {
             // auth()->user()->tokens()->delete();
-            $token_exist = token::where('user_id', (new tokenService)->getToken($request))->first();
+            $token_exist = token::where('user_id', $request->user_id)->first();
             if ($token_exist) {
                 $token_exist->delete();
                 return response([

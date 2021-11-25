@@ -10,9 +10,6 @@ use Throwable;
 
 class tokenService
 {
-    protected $key;
-    protected $payload;
-
     public function createToken($user_id)
     {
         try {

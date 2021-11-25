@@ -29,7 +29,7 @@ class CommentController extends Controller
                     }
 
                     $comment = Comment::create([
-                        'user_id' => (new tokenService)->getToken($request),
+                        'user_id' => $request->user_id,
                         'post_id' => $request->post_id,
                         'comments' => $request->comments,
                         'attachment' => $attachment
@@ -46,7 +46,7 @@ class CommentController extends Controller
                         ]);
                     }
                 } elseif ($post_exists->privacy == 'Private' or $post_exists->privacy == 'private') {
-                    $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post_exists->user_id, (new tokenService)->getToken($request), (new tokenService)->getToken($request), $post_exists->user_id, 'Accept']);
+                    $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post_exists->user_id, $request->user_id, $request->user_id, $post_exists->user_id, 'Accept']);
                     if (!empty($userSeen)) {
                         $attachment = null;
                         if ($request->file('attachment') != null) {
@@ -54,7 +54,7 @@ class CommentController extends Controller
                         }
 
                         $comment = Comment::create([
-                            'user_id' => (new tokenService)->getToken($request),
+                            'user_id' => $request->user_id,
                             'post_id' => $request->post_id,
                             'comments' => $request->comment,
                             'attachment' => $attachment
@@ -107,7 +107,7 @@ class CommentController extends Controller
                         'Updated Comment' => $comment_exists,
                     ]);
                 } elseif ($post_privacy->privacy == 'Private' or $post_privacy->privacy == 'private') {
-                    if ((new tokenService)->getToken($request) == $post_privacy->user_id) {
+                    if ($request->user_id == $post_privacy->user_id) {
                         if ($request->file('attachment') != null) {
                             unlink(storage_path('app/' . $comment_exists->attachment));
                         }
@@ -121,7 +121,7 @@ class CommentController extends Controller
                             'Updated Comment' => $comment_exists,
                         ]);
                     } else {
-                        $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post_privacy->user_id, (new tokenService)->getToken($request), (new tokenService)->getToken($request), $post_privacy->user_id, 'Accept']);
+                        $userSeen = DB::select('select * from friend_requests where ((sender_id = ? AND reciever_id = ?) OR (sender_id = ? AND reciever_id = ?)) AND status = ?', [$post_privacy->user_id, $request->user_id, $request->user_id, $post_privacy->user_id, 'Accept']);
                         if (!empty($userSeen)) {
                             if ($request->file('attachment') != null) {
                                 unlink(storage_path('app/' . $comment_exists->attachment));
@@ -156,7 +156,7 @@ class CommentController extends Controller
     public function delete(Request $request, $id)
     {
         try {
-            $comment = Comment::where('id', '=', $id, 'AND', 'user_id', '=', (new tokenService)->getToken($request))->first();
+            $comment = Comment::where('id', '=', $id, 'AND', 'user_id', '=', $request->user_id)->first();
             if (isset($comment)) {
                 if ($comment->attachment != null) {
                     unlink(storage_path('app/' . $comment->attachment));

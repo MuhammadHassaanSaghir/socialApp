@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use App\Models\token;
+use App\Services\tokenService;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -25,10 +26,10 @@ class AuthMiddleware
                 'message' => 'Please Enter Token',
             ]);
         } else {
-            $decode = JWT::decode($curr_token, new Key(config('JwtConstant.secret_key'), 'HS256'));
-            $token_exist = token::where('user_id', $decode->data)->first();
-
-            if (!isset($token_exist)) {
+            $decoded = (new tokenService)->getToken($request);
+            $request = $request->merge(array('user_id' => $decoded));
+            $user_exist = token::where('user_id', '=', $request->user_id)->first();
+            if (!isset($user_exist)) {
                 return response([
                     'message' => 'Unauthenticated',
                 ]);

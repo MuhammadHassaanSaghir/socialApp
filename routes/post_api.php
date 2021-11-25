@@ -12,6 +12,6 @@ Route::middleware(['myauths'])->group(function () {
     Route::post('/UpdatePost/{id}', [PostController::class, 'update']);
     Route::delete('/DeletePost/{id}', [PostController::class, 'delete']);
     Route::get('/GetPublicPosts', [PostController::class, 'getPublicposts']);
-    Route::get('/GetPrivatePosts', [PostController::class, 'getPrivateposts']);
+    Route::get('/GetPrivatePosts', [PostController::class, 'getPrivateposts'])->middleware('checkfriend');
     Route::post('/SearchPost', [PostController::class, 'search']);
 });

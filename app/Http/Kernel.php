@@ -46,7 +46,7 @@ class Kernel extends HttpKernel
         ],
 
         'myauths' => [\App\Http\Middleware\AuthMiddleware::class],
-        'checkfriend' => [\App\Http\Middleware\FriendMiddleware::class],
+        // 'checkfriend' => [\App\Http\Middleware\FriendMiddleware::class],
     ];
 
     /**
@@ -66,6 +66,7 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'checkfriend' => \App\Http\Middleware\FriendMiddleware::class,
 
     ];
 }

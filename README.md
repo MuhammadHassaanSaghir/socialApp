@@ -10,7 +10,6 @@
 <li>Form request validation (DONE)</li>
         <li>update user (DONE)</li>
         <li>middleware (DONE)</li>
-        <li></li>
     </ol>
 </h1>
 
